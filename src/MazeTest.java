@@ -153,7 +153,7 @@ public class MazeTest {
 		if (distStraight > 0.35) {
 			xDir.add(0);
 			yDir.add(1);
-			toTravel.add(distStraight - .1);
+			toTravel.add(distStraight - .25);
 		}
 		
 		frontNeckMotor.rotate(90);
@@ -161,7 +161,7 @@ public class MazeTest {
 		if (distRight > 0.35) {
 			xDir.add(1);
 			yDir.add(0);
-			toTravel.add(distRight - .1);
+			toTravel.add(distRight - .25);
 		}
 		
 		frontNeckMotor.rotate(-90);
@@ -170,7 +170,7 @@ public class MazeTest {
 		if (distLeft > 0.35) {
 			xDir.add(-1);
 			yDir.add(0);
-			toTravel.add(distLeft - 0.1);
+			toTravel.add(distLeft - 0.25);
 		}
 		frontNeckMotor.rotate(90);
 		
@@ -191,7 +191,7 @@ public class MazeTest {
 			if (helper(visited, x + xDir.get(i), y + yDir.get(i))) {
 				return true;
 			}
-//			moveBot(x, y, -xDir.get(i), -yDir.get(i));
+//			moveBot(x, y, -xDir.get(i), -yDir.get(i)); 
 		}
 		
 		visited[x][y] = false;
@@ -210,7 +210,8 @@ public class MazeTest {
 		}
 		
 		System.out.println("GO STRAIGHT");
-		robotPilot.travel(- toTravel * 10, true);
+		System.out.printf("DISTANCE: %f", toTravel * 100);
+		robotPilot.travel(- toTravel * 100, true);
 		
 		while (robotPilot.isMoving()) {
 			if (colorSensor.getColorID() == Color.WHITE || Button.ESCAPE.isDown()){ 
