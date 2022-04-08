@@ -31,6 +31,9 @@ public class MazeTest {
 	static SampleProvider colorSampleProvider;
 
 	static long startTimeMillis;
+	static char face = 'E';
+	static int x = 0, y = 0;
+	public static final HashMap<Character, Character> oppositeDir = new HashMap<Character, Character>() {{ put('N', 'S'); put('S', 'N'); put('W', 'E'); put('E', 'W'); }};
 
 	public static void main(String[] args) {
 		// Sets up pilot and sensors for robot
@@ -41,8 +44,8 @@ public class MazeTest {
 		//        Different right/left wheel diameters will cause the robot to
 		//        tend to arc slowly left or right while moving forward
 		//        (The robots wheels should be symmetrical, or very close.)        
-		Wheel leftWheel = WheeledChassis.modelWheel(Motor.C, 5.65).offset(7.25);
-		Wheel rightWheel = WheeledChassis.modelWheel(Motor.B, 5.65).offset(-7.25);
+		Wheel leftWheel = WheeledChassis.modelWheel(Motor.C, 5.5).offset(7.25);
+		Wheel rightWheel = WheeledChassis.modelWheel(Motor.B, 5.5).offset(-7.25);
 		Chassis myChassis = new WheeledChassis( new Wheel[]{leftWheel, rightWheel}, WheeledChassis.TYPE_DIFFERENTIAL);
 		robotPilot = new MovePilot(myChassis);
 		distanceSensor = new EV3UltrasonicSensor(SensorPort.S1);
@@ -53,7 +56,7 @@ public class MazeTest {
 		// feel free to play with these numbers...
 		robotPilot.setLinearSpeed(30);
 		robotPilot.setLinearAcceleration(60);
-		robotPilot.setAngularSpeed(80);
+		robotPilot.setAngularSpeed(30);
 
 		LCD.clear();
 		LCD.drawString("ENTER to run!", 0,0);
@@ -69,7 +72,6 @@ public class MazeTest {
 
 		bumpSampleProvider.fetchSample(bumpSample, 0);
 		
-		int x = 0, y = 0;
 		boolean[][] visited = new boolean[5][5];
 		
 		for (int i = 0; i < visited.length; i++) {
@@ -130,68 +132,107 @@ public class MazeTest {
 
 		return distanceSample[0];
 	}
+	
+	public static float getBumpSample() {
+		bumpSampleProvider = bumpSensor.getTouchMode();
+		float[] bumpSample = new float[bumpSampleProvider.sampleSize()];
+		
+		bumpSampleProvider.fetchSample(bumpSample, 0);
+		
+		return bumpSample[0];
+	}
+	
+	public static List<Character> getOpenDirs() {
+		List<Character> openDirs = new ArrayList<>();
+		
+		if (face == 'N') {
+			if (getDistanceMeasurement() > 0.35) {
+				openDirs.add('N');
+			}
+			frontNeckMotor.rotate(-90);
+			if (getDistanceMeasurement() > 0.35) {
+				openDirs.add('W');
+			}
+			frontNeckMotor.rotate(180);
+			if (getDistanceMeasurement() > 0.35) {
+				openDirs.add('E');
+			}
+			frontNeckMotor.rotate(-90);
+		}
+		else if (face == 'E') {
+			if (getDistanceMeasurement() > 0.35) {
+				openDirs.add('E');
+			}
+			frontNeckMotor.rotate(-90);
+			if (getDistanceMeasurement() > 0.35) {
+				openDirs.add('N');
+			}
+			frontNeckMotor.rotate(180);
+			if (getDistanceMeasurement() > 0.35) {
+				openDirs.add('S');
+			}
+			frontNeckMotor.rotate(-90);
+		}
+		else if (face == 'S') {
+			if (getDistanceMeasurement() > 0.35) {
+				openDirs.add('S');
+			}
+			frontNeckMotor.rotate(-90);
+			if (getDistanceMeasurement() > 0.35) {
+				openDirs.add('E');
+			}
+			frontNeckMotor.rotate(180);
+			if (getDistanceMeasurement() > 0.35) {
+				openDirs.add('W');
+			}
+			frontNeckMotor.rotate(-90);
+		}
+		else if (face == 'W') {
+			if (getDistanceMeasurement() > 0.35) {
+				openDirs.add('W');
+			}
+			frontNeckMotor.rotate(-90);
+			if (getDistanceMeasurement() > 0.35) {
+				openDirs.add('S');
+			}
+			frontNeckMotor.rotate(180);
+			if (getDistanceMeasurement() > 0.35) {
+				openDirs.add('N');
+			}
+			frontNeckMotor.rotate(-90);
+		}
+		
+		return openDirs;
+	}
 
 	public static boolean helper(boolean[][] visited, int x, int y) {
 		
 		System.out.printf("x = %d, y = %d", x, y);
 		
-		if (colorSensor.getColorID() == Color.WHITE) {
+		if (colorSensor.getColorID() == Color.BLACK) {
 			System.out.println("FOUND GOAL!!!");
 			return true;
 		}
 		
+		System.out.println(visited[x][y]);
 		if (visited[x][y])
 			return false;
 		
 		visited[x][y] = true;
+		List<Character> openDirs = getOpenDirs();
 		
-		List<Integer> xDir = new ArrayList<Integer>();
-		List<Integer> yDir = new ArrayList<Integer>();
-		List<Double> toTravel = new ArrayList<Double>();
-		
-		float distStraight = getDistanceMeasurement();
-		if (distStraight > 0.35) {
-			xDir.add(0);
-			yDir.add(1);
-			toTravel.add(distStraight - .25);
-		}
-		
-		frontNeckMotor.rotate(90);
-		float distRight = getDistanceMeasurement();
-		if (distRight > 0.35) {
-			xDir.add(1);
-			yDir.add(0);
-			toTravel.add(distRight - .25);
-		}
-		
-		frontNeckMotor.rotate(-90);
-		frontNeckMotor.rotate(-90);
-		float distLeft = getDistanceMeasurement();
-		if (distLeft > 0.35) {
-			xDir.add(-1);
-			yDir.add(0);
-			toTravel.add(distLeft - 0.25);
-		}
-		frontNeckMotor.rotate(90);
-		
-
-		System.out.println("-------------");
-		System.out.printf("d-right: %.2f\n", distRight);
-		System.out.printf("d-straight: %.2f\n", distStraight);
-		System.out.printf("d-left: %.2f\n", distLeft);
-		
-		for (int i = 0; i < xDir.size(); i++)
+		for (char dir: openDirs)
 		{
-			System.out.printf("moving to x = %d, y = %d", x + xDir.get(i), y + yDir.get(i));
-			Button.waitForAnyPress();
-			boolean move = moveBot(x, y, xDir.get(i), yDir.get(i), toTravel.get(i));
+			System.out.println(dir);
+			boolean move = moveBot(dir);
 			if (move == true) {
 				return true;
 			}
-			if (helper(visited, x + xDir.get(i), y + yDir.get(i))) {
+			int[] temp = tempCoord(dir);
+			if (helper(visited, temp[0], temp[1])) {
 				return true;
 			}
-//			moveBot(x, y, -xDir.get(i), -yDir.get(i)); 
+			moveBot(oppositeDir.get(dir));
 		}
 		
 		visited[x][y] = false;
@@ -199,27 +240,82 @@ public class MazeTest {
 		
 	}
 	
-	public static boolean moveBot(int curX, int curY, int xDir, int yDir, double toTravel) {
-		if (xDir == -1) {
-			System.out.println("TURN LEFT");
-			robotPilot.rotate(-140);
+	public static int[] tempCoord(char dir) {
+		if (dir == 'N') {
+			y++;
+		} else if (dir == 'S') {
+			y--;
+		} else if (dir == 'W') {
+			x--;
+		} else { // dir == 'E'
+			x++;
 		}
-		else if (xDir == 1) {
-			System.out.println("TURN RIGHT");
-			robotPilot.rotate(140);
+		return new int[] {x, y};
+	}
+	
+	public static boolean moveBot(char dir) {
+		if (face == 'N') {
+			if (dir == 'E') {
+				robotPilot.rotate(140);
+			}
+			else if (dir == 'W') {
+				robotPilot.rotate(-140);
+			}
+			else if (dir == 'S') {
+				robotPilot.rotate(270);
+			}
+		}
+		else if (face == 'E') {
+			if (dir == 'N') {
+				robotPilot.rotate(-140);
+			}
+			else if (dir == 'S') {
+				robotPilot.rotate(140);
+			}
+			else if (dir == 'W') {
+				robotPilot.rotate(270);
+			}
+		}
+		else if (face == 'S') {
+			if (dir == 'W') {
+				robotPilot.rotate(140);
+			}
+			else if (dir == 'E') {
+				robotPilot.rotate(-140);
+			}
+			else if (dir == 'N') {
+				robotPilot.rotate(270);
+			}
+		}
+		else if (face == 'W') {
+			if (dir == 'N') {
+				robotPilot.rotate(140);
+			}
+			else if (dir == 'S') {
+				robotPilot.rotate(-140);
+			}
+			else if (dir == 'E') {
+				robotPilot.rotate(270);
+			}
 		}
 		
-		System.out.println("GO STRAIGHT");
-		System.out.printf("DISTANCE: %f", toTravel * 100);
-		robotPilot.travel(- toTravel * 100, true);
+		face = dir;
+		robotPilot.travel(-40, true);
 		
 		while (robotPilot.isMoving()) {
-			if (colorSensor.getColorID() == Color.WHITE || Button.ESCAPE.isDown()){ 
+			if (getBumpSample() == 1) {
+				System.out.println("BUMPPPPPPPPP");
+				robotPilot.stop();
+				robotPilot.travel(10, true);
+			}
+			System.out.println(colorSensor.getColorID());
+			if (colorSensor.getColorID() == Color.BLACK || Button.ESCAPE.isDown()){ 
 				System.out.println("FOUND GOAL WHILE MOVING!!!");
 				return true; // found the GOAL (or human aborted with ESC button)
 			}
 		}
-		return false;
+		return false;	
 	}
+	
 
 }
